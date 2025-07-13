@@ -1,4 +1,5 @@
-import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import { User } from "src/user/entities/user.entity";
+import { Column, CreateDateColumn, Entity, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 
 @Entity()  // An Entity defines the structure of your database table.
 export class Post {
@@ -11,8 +12,8 @@ export class Post {
     @Column({type: 'text'})
     content: string
 
-    @Column()
-    authorName: string
+    @ManyToOne(() => User , (user) => user.posts)
+    author: User
 
     @CreateDateColumn()
     createdDate: Date

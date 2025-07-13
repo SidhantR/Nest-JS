@@ -1,9 +1,12 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseIntPipe, Post, Put, Query, UsePipes, ValidationPipe } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseIntPipe, Post, Put, Query, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
 import { PostsService } from './posts.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { PostExistPipe } from './pipes/post-exists.pipe';
 import { Post as PostEntity} from './entities/post.entity';
+import { User } from 'src/user/entities/user.entity';
+import { CurrentUser } from 'src/user/decorators/current-user.decorator';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 
 @Controller('posts')
 export class PostsController {
@@ -19,6 +22,7 @@ export class PostsController {
         return this.postsService.findPostById(id)
     }
 
+    @UseGuards(JwtAuthGuard)
     @Post('create')
     @HttpCode(HttpStatus.CREATED)
     @UsePipes(
@@ -27,19 +31,21 @@ export class PostsController {
             forbidNonWhitelisted: true
         })
     )
-    async create(@Body() createPostData : CreatePostDto): Promise<PostEntity>{
-        return this.postsService.createPost(createPostData)
+    async create(@Body() createPostData : CreatePostDto, @CurrentUser() author: User): Promise<PostEntity>{
+        return this.postsService.createPost(createPostData, author)
     }
 
+    @UseGuards(JwtAuthGuard)
     @Put(':id')
     async update(@Param('id', ParseIntPipe, PostExistPipe) id : number,
-    @Body() updateData: UpdatePostDto): Promise<PostEntity>{
-        return this.postsService.update(id, updateData)
+    @Body() updateData: UpdatePostDto, @CurrentUser() author: User): Promise<PostEntity>{
+        return this.postsService.update(id, updateData, author)
     }
 
+    @UseGuards(JwtAuthGuard)
     @Delete(':id')
     @HttpCode(HttpStatus.NO_CONTENT)
-    async deletePost(@Param('id', ParseIntPipe, PostExistPipe) id: number): Promise<void>{
-        this.postsService.remove(id)
+    async deletePost(@Param('id', ParseIntPipe, PostExistPipe) id: number, @CurrentUser() author: User): Promise<void>{
+        this.postsService.remove(id, author)
     }
 }

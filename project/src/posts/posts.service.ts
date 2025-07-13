@@ -1,10 +1,11 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Post } from './entities/post.entity';
 import { Repository } from 'typeorm';
 import { CreatePostDto } from './dto/create-post.dto';
 import { title } from 'process';
 import { UpdatePostDto } from './dto/update-post.dto';
+import { User } from 'src/user/entities/user.entity';
 
 @Injectable()
 export class PostsService {
@@ -14,34 +15,46 @@ export class PostsService {
     ) {}
 
     async findAll(): Promise<Post[]>{
-        return this.postRepository.find();
+        return this.postRepository.find({
+            relations: ['author'] // join the User table and include author object
+        });
     }
 
     async findPostById(id: number): Promise<Post> {
-        const singlePost = await this.postRepository.findOneBy({id})
+        const singlePost = await this.postRepository.findOne({
+            where: {id},
+            relations: ['author']
+        })
         if(!singlePost) {
             throw new NotFoundException(`Post with id ${id} is not found`)
         }
         return singlePost
     }
 
-    async createPost(createPostData: CreatePostDto): Promise<Post> {
+    async createPost(createPostData: CreatePostDto, author: User): Promise<Post> {
+        //The author of the post is the currently logged-in user.
         const newPost = this.postRepository.create({
             title: createPostData.title,
-            authorName: createPostData.authorName,
             content: createPostData.content,
+            author
         })
         return this.postRepository.save(newPost)
     }
 
-    async update(id: number, updatePostData: UpdatePostDto): Promise<Post> {
-        const findPostToEdit = await this.findPostById(id);
-        Object.assign(findPostToEdit, updatePostData);
-        return this.postRepository.save(findPostToEdit)
+    async update(id: number, updatePostData: UpdatePostDto, author: User): Promise<Post> {
+        const post = await this.findPostById(id);
+        if(post.author.id !== author.id){
+            throw new ForbiddenException('You can only update your own post')
+        }
+        Object.assign(post, updatePostData);
+        return this.postRepository.save(post)
     }
 
-    async remove(id: number): Promise<void>{
-        const postToDelete = await this.findPostById(id)
-        this.postRepository.remove(postToDelete)
+    async remove(id: number, author: User): Promise<void>{
+        const post = await this.findPostById(id)
+        if(post.author.id !== author.id){
+            throw new ForbiddenException('You can only delete your own post')
+        }
+        this.postRepository.remove(post)
     }
 }

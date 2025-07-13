@@ -12,9 +12,9 @@ export class CreatePostDto {
     @MinLength(3, {message: 'Content must be atleast of length 5'})
     content: string
 
-    @IsNotEmpty({message: 'Author must not be empty'})
-    @IsString({message: 'Author must be string'})
-    @MinLength(3, {message: 'Author must be atleast of length 3'})
-    @MaxLength(50, {message: 'Author can not be longer than length 50'})
-    authorName: string
+    // @IsNotEmpty({message: 'Author must not be empty'})
+    // @IsString({message: 'Author must be string'})
+    // @MinLength(3, {message: 'Author must be atleast of length 3'})
+    // @MaxLength(50, {message: 'Author can not be longer than length 50'})
+    // author: string
 }
