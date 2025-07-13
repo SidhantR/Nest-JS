@@ -9,9 +9,17 @@ import { UserModule } from './user/user.module';
 import { User } from './user/entities/user.entity';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import appConfig from './config/app.config';
+import { ThrottlerModule } from '@nestjs/throttler';
 
 @Module({
   imports: [
+
+    ThrottlerModule.forRoot([
+        {
+            ttl: 60000,
+            limit: 10
+        }
+    ]),
     ConfigModule.forRoot({
         isGlobal: true, // make config module globally available
         load: [appConfig]
