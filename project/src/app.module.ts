@@ -4,21 +4,35 @@ import { AppService } from './app.service';
 import { PostsModule } from './posts/posts.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Post } from './posts/entities/post.entity';
+import { AuthModule } from './auth/auth.module';
+import { UserModule } from './user/user.module';
+import { User } from './user/entities/user.entity';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import appConfig from './config/app.config';
 
 @Module({
   imports: [
-    // configure type orm in root module
-    TypeOrmModule.forRoot({
-        type: 'postgres',
-        host: 'localhost',
-        port: 5432,
-        username: 'postgres',
-        password: 'postgres@123',
-        database: 'nest-db',
-        entities: [Post],    // array of entities that you want to register
-        synchronize : true   // Auto-syncs entities to DB on app start (for dev)
+    ConfigModule.forRoot({
+        isGlobal: true, // make config module globally available
+        load: [appConfig]
     }),
-    PostsModule],
+    TypeOrmModule.forRootAsync({
+        imports: [ConfigModule],
+        inject: [ConfigService],
+        useFactory: (configService: ConfigService) => ({
+            type: 'postgres',
+            host: configService.get<string>('database.host'),
+            port: configService.get<number>('database.port'),
+            username: configService.get<string>('database.username'),
+            password: configService.get<string>('database.password'),
+            database: configService.get<string>('database.name'),
+            entities: [Post, User],
+            synchronize: configService.get<string>('NODE_ENV') === 'development',
+        })
+    }),
+    PostsModule,
+    AuthModule,
+    UserModule],
   controllers: [AppController],
   providers: [AppService],
 })
